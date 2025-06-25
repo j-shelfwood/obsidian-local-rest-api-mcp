@@ -9,9 +9,17 @@ An MCP (Model Context Protocol) server that provides LLM tool calls to interact 
 
 ## Installation
 
+### Using npx (Recommended)
+
+```bash
+npx obsidian-local-rest-api-mcp
+```
+
+### From Source
+
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/j-shelfwood/obsidian-local-rest-api-mcp.git
 cd obsidian-local-rest-api-mcp
 
 # Install dependencies with bun
@@ -55,8 +63,8 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "obsidian-vault": {
-      "command": "node",
-      "args": ["/absolute/path/to/obsidian-local-rest-api-mcp/build/index.js"],
+      "command": "npx",
+      "args": ["obsidian-local-rest-api-mcp"],
       "env": {
         "OBSIDIAN_API_URL": "http://localhost:8000",
         "OBSIDIAN_API_KEY": "your-api-key-if-needed"
@@ -73,6 +81,7 @@ Use the included `.vscode/mcp.json` configuration file.
 ## Available Tools
 
 ### File Operations
+
 - **list_files** - List all files in the vault
 - **get_file** - Get content of a specific file
 - **create_file** - Create a new file or directory
@@ -80,6 +89,7 @@ Use the included `.vscode/mcp.json` configuration file.
 - **delete_file** - Delete a file
 
 ### Note Operations
+
 - **list_notes** - List notes with metadata
 - **get_note** - Get note with frontmatter
 - **create_note** - Create note with optional frontmatter
@@ -88,6 +98,7 @@ Use the included `.vscode/mcp.json` configuration file.
 - **search_notes** - Search notes by content
 
 ### Metadata Operations
+
 - **get_metadata_keys** - List all frontmatter keys
 - **get_metadata_values** - Get unique values for a key
 
@@ -113,6 +124,7 @@ bun run tsc --noEmit
 ## Error Handling
 
 The server includes comprehensive error handling:
+
 - API connection failures
 - Invalid tool parameters
 - Network timeouts

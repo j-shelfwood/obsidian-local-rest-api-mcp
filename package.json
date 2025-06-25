@@ -4,7 +4,7 @@
   "type": "module",
   "main": "build/index.js",
   "bin": {
-    "obsidian-mcp": "build/index.js"
+    "obsidian-local-rest-api-mcp": "build/index.js"
   },
   "scripts": {
     "build": "bun run tsc && chmod +x build/index.js",
