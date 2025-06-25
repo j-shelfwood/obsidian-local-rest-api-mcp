@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "obsidian-vault": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["build/index.js"]
+    }
+  }
+}
