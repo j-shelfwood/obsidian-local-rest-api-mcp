@@ -1,6 +1,115 @@
 # Obsidian Local REST API MCP Server
 
-An MCP (Model Context Protocol) server that provides LLM tool calls to interact with an Obsidian vault through a local REST API. This server acts as a bridge between MCP clients (like Claude Desktop, VS Code, etc.) and the Obsidian Local REST API.
+An AI-Native MCP (Model Context Protocol) server that provides intelligent, task-oriented tools for interacting with Obsidian vaults through a local REST API.
+
+## 🧠 AI-Native Design Philosophy
+
+This MCP server has been redesigned following AI-Native principles rather than simple API-to-tool mapping. Instead of exposing low-level CRUD operations, it provides high-level, task-oriented tools that LLMs can reason about more effectively.
+
+### Before vs After: The Transformation
+
+| **Old Approach (CRUD-Based)** | **New Approach (AI-Native)** | **Why Better** |
+|--------------------------------|-------------------------------|----------------|
+| `list_files` (returns everything) | `list_directory(path, limit, offset)` | Prevents context overflow with pagination |
+| `create_file` + `update_file` | `write_file(path, content, mode)` | Single tool handles create/update/append |
+| `create_note` + `update_note` | `create_or_update_note(path, content, frontmatter)` | Intelligent upsert removes decision complexity |
+| `search_notes(query)` | `search_vault(query, scope, path_filter)` | Precise, scopeable search with advanced filtering |
+| *(no equivalent)* | `get_daily_note(date)` | High-level abstraction for common workflow |
+| *(no equivalent)* | `get_recent_notes(limit)` | Task-oriented recent file access |
+| *(no equivalent)* | `find_related_notes(path, on)` | Conceptual relationship discovery |
+
+## 🛠 Available Tools
+
+### Directory & File Operations
+
+#### `list_directory`
+**Purpose**: List directory contents with pagination to prevent context overflow
+```json
+{
+  "path": "Projects/",
+  "recursive": false,
+  "limit": 20,
+  "offset": 0
+}
+```
+**AI Benefit**: LLM can explore vault structure incrementally without overwhelming context
+
+#### `read_file`
+**Purpose**: Read content of any file in the vault
+```json
+{"path": "notes/meeting-notes.md"}
+```
+
+#### `write_file`
+**Purpose**: Write file with multiple modes - replaces separate create/update operations
+```json
+{
+  "path": "notes/summary.md",
+  "content": "# Meeting Summary\n...",
+  "mode": "append"  // "overwrite", "append", "prepend"
+}
+```
+**AI Benefit**: Single tool handles all write scenarios, removes ambiguity
+
+#### `delete_item`
+**Purpose**: Delete any file or directory
+```json
+{"path": "old-notes/"}
+```
+
+### AI-Native Note Operations
+
+#### `create_or_update_note`
+**Purpose**: Intelligent upsert - creates if missing, updates if exists
+```json
+{
+  "path": "daily/2024-12-26",
+  "content": "## Tasks\n- Review AI-native MCP design",
+  "frontmatter": {"tags": ["daily", "tasks"]}
+}
+```
+**AI Benefit**: Eliminates "does this note exist?" decision tree
+
+#### `get_daily_note`
+**Purpose**: Smart daily note retrieval with common naming patterns
+```json
+{"date": "today"}  // or "yesterday", "2024-12-26"
+```
+**AI Benefit**: Abstracts file system details and naming conventions
+
+#### `get_recent_notes`
+**Purpose**: Get recently modified notes
+```json
+{"limit": 5}
+```
+**AI Benefit**: Matches natural "what did I work on recently?" queries
+
+### Advanced Search & Discovery
+
+#### `search_vault`
+**Purpose**: Multi-scope search with advanced filtering
+```json
+{
+  "query": "machine learning",
+  "scope": ["content", "filename", "tags"],
+  "path_filter": "research/"
+}
+```
+**AI Benefit**: Precise, targeted search reduces noise
+
+#### `find_related_notes`
+**Purpose**: Discover conceptual relationships between notes
+```json
+{
+  "path": "ai-research.md",
+  "on": ["tags", "links"]
+}
+```
+**AI Benefit**: Enables relationship-based workflows and serendipitous discovery
+
+### Legacy Tools (Backward Compatibility)
+
+The server maintains backward compatibility with existing tools like `get_note`, `list_notes`, `get_metadata_keys`, etc.
 
 ## Prerequisites
 
@@ -77,30 +186,6 @@ Add to your `claude_desktop_config.json`:
 #### VS Code with MCP Extension
 
 Use the included `.vscode/mcp.json` configuration file.
-
-## Available Tools
-
-### File Operations
-
-- **list_files** - List all files in the vault
-- **get_file** - Get content of a specific file
-- **create_file** - Create a new file or directory
-- **update_file** - Update file content
-- **delete_file** - Delete a file
-
-### Note Operations
-
-- **list_notes** - List notes with metadata
-- **get_note** - Get note with frontmatter
-- **create_note** - Create note with optional frontmatter
-- **update_note** - Update note content/frontmatter
-- **delete_note** - Delete a note
-- **search_notes** - Search notes by content
-
-### Metadata Operations
-
-- **get_metadata_keys** - List all frontmatter keys
-- **get_metadata_values** - Get unique values for a key
 
 ## Development
 

@@ -81,7 +81,69 @@ class ObsidianApiClient {
         }
         return response.json();
     }
-    // Files endpoints
+    // Enhanced API client methods for AI-native operations
+    // Directory operations
+    async listDirectory(path = ".", recursive = false, limit = 50, offset = 0) {
+        const params = new URLSearchParams({
+            path,
+            recursive: recursive.toString(),
+            limit: limit.toString(),
+            offset: offset.toString(),
+        });
+        return this.request(`/vault/directory?${params}`);
+    }
+    // File operations
+    async readFile(path) {
+        return this.request(`/files/${encodeURIComponent(path)}`);
+    }
+    async writeFile(path, content, mode = "overwrite") {
+        return this.request("/files/write", {
+            method: "POST",
+            body: JSON.stringify({ path, content, mode }),
+        });
+    }
+    async deleteItem(path) {
+        return this.request(`/files/${encodeURIComponent(path)}`, {
+            method: "DELETE",
+        });
+    }
+    // AI-native note operations
+    async createOrUpdateNote(path, content, frontmatter = {}) {
+        return this.request("/notes/upsert", {
+            method: "POST",
+            body: JSON.stringify({
+                path,
+                content,
+                front_matter: frontmatter
+            }),
+        });
+    }
+    async getDailyNote(date = "today") {
+        const params = new URLSearchParams({ date });
+        return this.request(`/vault/notes/daily?${params}`);
+    }
+    async getRecentNotes(limit = 5) {
+        const params = new URLSearchParams({ limit: limit.toString() });
+        return this.request(`/vault/notes/recent?${params}`);
+    }
+    // Enhanced search
+    async searchVault(query, scope = ["content", "filename", "tags"], pathFilter) {
+        const params = new URLSearchParams({
+            query,
+            scope: scope.join(","),
+        });
+        if (pathFilter) {
+            params.append("path_filter", pathFilter);
+        }
+        return this.request(`/vault/search?${params}`);
+    }
+    async findRelatedNotes(path, on = ["tags", "links"]) {
+        const params = new URLSearchParams({
+            on: on.join(","),
+        });
+        return this.request(`/vault/notes/related/${encodeURIComponent(path)}?${params}`);
+    }
+    // Legacy methods for backward compatibility
     async listFiles() {
         return this.request("/files");
     }
@@ -167,20 +229,27 @@ class ObsidianMcpServer {
         this.setupTools();
     }
     setupTools() {
-        // List all files in vault
+        // AI-Native Tools Definition
         this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
             tools: [
+                // Directory Operations
                 {
-                    name: "list_files",
-                    description: "List all files in the Obsidian vault",
+                    name: "list_directory",
+                    description: "List directory contents with pagination to prevent context overflow. Shows immediate contents by default.",
                     inputSchema: {
                         type: "object",
-                        properties: {},
+                        properties: {
+                            path: { type: "string", description: "Directory path to list", default: "." },
+                            recursive: { type: "boolean", description: "Include subdirectories recursively", default: false },
+                            limit: { type: "number", description: "Maximum items to return", default: 50 },
+                            offset: { type: "number", description: "Pagination offset", default: 0 },
+                        },
                     },
                 },
+                // File Operations
                 {
-                    name: "get_file",
-                    description: "Get content of a specific file from the vault",
+                    name: "read_file",
+                    description: "Read content of a specific file from the vault",
                     inputSchema: {
                         type: "object",
                         properties: {
@@ -190,106 +259,119 @@ class ObsidianMcpServer {
                     },
                 },
                 {
-                    name: "create_file",
-                    description: "Create a new file in the vault",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            path: { type: "string", description: "Path for the new file" },
-                            content: { type: "string", description: "Content of the file" },
-                            type: { type: "string", enum: ["file", "directory"], description: "Type of item to create" },
-                        },
-                        required: ["path", "content"],
-                    },
-                },
-                {
-                    name: "update_file",
-                    description: "Update content of an existing file",
+                    name: "write_file",
+                    description: "Write file content with different modes: overwrite (default), append, or prepend. Handles both create and update operations.",
                     inputSchema: {
                         type: "object",
                         properties: {
                             path: { type: "string", description: "Path to the file" },
-                            content: { type: "string", description: "New content of the file" },
+                            content: { type: "string", description: "Content to write" },
+                            mode: { type: "string", enum: ["overwrite", "append", "prepend"], description: "Write mode", default: "overwrite" },
                         },
                         required: ["path", "content"],
                     },
                 },
                 {
-                    name: "delete_file",
-                    description: "Delete a file from the vault",
+                    name: "delete_item",
+                    description: "Delete a file or directory from the vault",
                     inputSchema: {
                         type: "object",
                         properties: {
-                            path: { type: "string", description: "Path to the file to delete" },
+                            path: { type: "string", description: "Path to the item to delete" },
+                        },
+                        required: ["path"],
+                    },
+                },
+                // AI-Native Note Operations
+                {
+                    name: "create_or_update_note",
+                    description: "Create or update a note with content and frontmatter. Performs upsert operation - creates if doesn't exist, updates if it does.",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            path: { type: "string", description: "Path for the note (without .md extension)" },
+                            content: { type: "string", description: "Note content" },
+                            frontmatter: { type: "object", description: "Frontmatter metadata", default: {} },
+                        },
+                        required: ["path", "content"],
+                    },
+                },
+                {
+                    name: "get_daily_note",
+                    description: "Get daily note for a specific date. Handles common daily note naming conventions and file locations.",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            date: { type: "string", description: "Date (today, yesterday, tomorrow, or YYYY-MM-DD)", default: "today" },
+                        },
+                    },
+                },
+                {
+                    name: "get_recent_notes",
+                    description: "Get recently modified notes, ordered by modification time",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            limit: { type: "number", description: "Number of recent notes to return", default: 5 },
+                        },
+                    },
+                },
+                // Enhanced Search and Discovery
+                {
+                    name: "search_vault",
+                    description: "Search vault content across files, filenames, and metadata with advanced filtering",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            query: { type: "string", description: "Search query" },
+                            scope: {
+                                type: "array",
+                                items: { type: "string", enum: ["content", "filename", "tags"] },
+                                description: "Search scope - where to look for the query",
+                                default: ["content", "filename", "tags"]
+                            },
+                            path_filter: { type: "string", description: "Limit search to specific path prefix" },
+                        },
+                        required: ["query"],
+                    },
+                },
+                {
+                    name: "find_related_notes",
+                    description: "Find notes related to a given note based on shared tags, links, or backlinks",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            path: { type: "string", description: "Path to the source note" },
+                            on: {
+                                type: "array",
+                                items: { type: "string", enum: ["tags", "links"] },
+                                description: "Relationship criteria to use for finding related notes",
+                                default: ["tags", "links"]
+                            },
+                        },
+                        required: ["path"],
+                    },
+                },
+                // Legacy Tools (for backward compatibility)
+                {
+                    name: "get_note",
+                    description: "Get a specific note with its content and metadata (legacy)",
+                    inputSchema: {
+                        type: "object",
+                        properties: {
+                            path: { type: "string", description: "Path to the note" },
                         },
                         required: ["path"],
                     },
                 },
                 {
                     name: "list_notes",
-                    description: "List all notes in the vault with metadata",
-                    inputSchema: {
-                        type: "object",
-                        properties: {},
-                    },
-                },
-                {
-                    name: "get_note",
-                    description: "Get a specific note with its content and metadata",
+                    description: "List all notes in the vault with optional search filter (legacy with search support)",
                     inputSchema: {
                         type: "object",
                         properties: {
-                            path: { type: "string", description: "Path to the note" },
+                            search: { type: "string", description: "Optional search query to filter notes" },
                         },
-                        required: ["path"],
-                    },
-                },
-                {
-                    name: "create_note",
-                    description: "Create a new note with optional frontmatter",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            path: { type: "string", description: "Path for the new note" },
-                            content: { type: "string", description: "Content of the note" },
-                            frontmatter: { type: "object", description: "Optional frontmatter metadata" },
-                        },
-                        required: ["path", "content"],
-                    },
-                },
-                {
-                    name: "update_note",
-                    description: "Update a note's content and/or frontmatter",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            path: { type: "string", description: "Path to the note" },
-                            content: { type: "string", description: "New content (optional)" },
-                            frontmatter: { type: "object", description: "New frontmatter (optional)" },
-                        },
-                        required: ["path"],
-                    },
-                },
-                {
-                    name: "delete_note",
-                    description: "Delete a note from the vault",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            path: { type: "string", description: "Path to the note to delete" },
-                        },
-                        required: ["path"],
-                    },
-                },
-                {
-                    name: "search_notes",
-                    description: "Search notes by content or metadata",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            query: { type: "string", description: "Search query" },
-                        },
-                        required: ["query"],
                     },
                 },
                 {
@@ -319,38 +401,47 @@ class ObsidianMcpServer {
             try {
                 let result;
                 switch (name) {
-                    case "list_files":
-                        result = await this.client.listFiles();
+                    // AI-Native Tools
+                    case "list_directory":
+                        result = await this.client.listDirectory(args?.path, args?.recursive, args?.limit, args?.offset);
                         break;
-                    case "get_file":
-                        result = await this.client.getFile(args?.path);
+                    case "read_file":
+                        result = await this.client.readFile(args?.path);
                         break;
-                    case "create_file":
-                        result = await this.client.createFile(args?.path, args?.content, args?.type);
+                    case "write_file":
+                        result = await this.client.writeFile(args?.path, args?.content, args?.mode);
                         break;
-                    case "update_file":
-                        result = await this.client.updateFile(args?.path, args?.content);
+                    case "delete_item":
+                        result = await this.client.deleteItem(args?.path);
                         break;
-                    case "delete_file":
-                        result = await this.client.deleteFile(args?.path);
+                    case "create_or_update_note":
+                        result = await this.client.createOrUpdateNote(args?.path, args?.content, args?.frontmatter);
                         break;
+                    case "get_daily_note":
+                        result = await this.client.getDailyNote(args?.date);
+                        break;
+                    case "get_recent_notes":
+                        result = await this.client.getRecentNotes(args?.limit);
+                        break;
+                    case "search_vault":
+                        result = await this.client.searchVault(args?.query, args?.scope, args?.path_filter);
+                        break;
+                    case "find_related_notes":
+                        result = await this.client.findRelatedNotes(args?.path, args?.on);
+                        break;
+                    // Legacy Tools (backward compatibility)
                     case "list_notes":
-                        result = await this.client.listNotes();
+                        const searchQuery = args?.search;
+                        if (searchQuery) {
+                            // Use the enhanced search functionality
+                            result = await this.client.searchVault(searchQuery, ["content", "filename", "tags"]);
+                        }
+                        else {
+                            result = await this.client.listNotes();
+                        }
                         break;
                     case "get_note":
                         result = await this.client.getNote(args?.path);
-                        break;
-                    case "create_note":
-                        result = await this.client.createNote(args?.path, args?.content, args?.frontmatter);
-                        break;
-                    case "update_note":
-                        result = await this.client.updateNote(args?.path, args?.content, args?.frontmatter);
-                        break;
-                    case "delete_note":
-                        result = await this.client.deleteNote(args?.path);
-                        break;
-                    case "search_notes":
-                        result = await this.client.searchNotes(args?.query);
                         break;
                     case "get_metadata_keys":
                         result = await this.client.getMetadataKeys();

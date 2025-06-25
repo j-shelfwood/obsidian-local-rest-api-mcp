@@ -27,11 +27,15 @@
     "notes",
     "rest-api",
     "llm",
-    "ai"
+    "ai",
+    "ai-native",
+    "task-oriented",
+    "intelligent-tools",
+    "knowledge-management"
   ],
   "author": "shelfwood",
   "license": "MIT",
-  "description": "MCP server providing LLM tool calls for Obsidian vault interaction via REST API",
+  "description": "AI-Native MCP server for Obsidian vaults with task-oriented, intelligent tools designed for LLM workflows",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/j-shelfwood/obsidian-local-rest-api-mcp.git"
