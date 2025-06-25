@@ -26,7 +26,7 @@ Options:
   -h, --help       Show help
 
 Environment Variables:
-  OBSIDIAN_API_URL    Base URL for Obsidian REST API (default: http://localhost:8000)
+  OBSIDIAN_API_URL    Base URL for Obsidian REST API (default: http://obsidian-local-rest-api.test)
   OBSIDIAN_API_KEY    Optional bearer token for authentication
 
 This is an MCP server that communicates via stdio. It should be configured
@@ -55,7 +55,7 @@ import { z } from "zod";
 
 // Configuration schema
 const ConfigSchema = z.object({
-  baseUrl: z.string().url().default("http://localhost:8000"),
+  baseUrl: z.string().url().default("http://obsidian-local-rest-api.test"),
   apiKey: z.string().optional(),
 });
 
@@ -458,7 +458,7 @@ class ObsidianMcpServer {
 async function main() {
   // Read configuration from environment variables
   const config = ConfigSchema.parse({
-    baseUrl: process.env.OBSIDIAN_API_URL || "http://localhost:8000",
+    baseUrl: process.env.OBSIDIAN_API_URL || "http://obsidian-local-rest-api.test",
     apiKey: process.env.OBSIDIAN_API_KEY,
   });
 
@@ -475,9 +475,8 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
-    console.error("Fatal error:", error);
-    process.exit(1);
-  });
-}
+// Run the server if this file is executed directly
+main().catch((error) => {
+  console.error("Fatal error:", error);
+  process.exit(1);
+});
