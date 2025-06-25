@@ -2,6 +2,10 @@
 
 An MCP (Model Context Protocol) server that provides LLM tool calls to interact with an Obsidian vault through a local REST API. This server acts as a bridge between MCP clients (like Claude Desktop, VS Code, etc.) and the Obsidian Local REST API.
 
+<a href="https://glama.ai/mcp/servers/@j-shelfwood/obsidian-local-rest-api-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@j-shelfwood/obsidian-local-rest-api-mcp/badge" alt="Obsidian Local REST API Server MCP server" />
+</a>
+
 ## Prerequisites
 
 - Node.js 18+ or Bun runtime
