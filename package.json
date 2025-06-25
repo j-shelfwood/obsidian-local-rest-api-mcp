@@ -1,6 +1,6 @@
 {
   "name": "obsidian-local-rest-api-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "main": "build/index.js",
   "bin": {
