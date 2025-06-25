@@ -1,5 +1,53 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Handle CLI arguments
+const args = process.argv.slice(2);
+if (args.includes('--version') || args.includes('-v')) {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const packagePath = join(__dirname, '..', 'package.json');
+  const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+  console.log(packageJson.version);
+  process.exit(0);
+}
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+Obsidian Local REST API MCP Server
+
+Usage: obsidian-local-rest-api-mcp [options]
+
+Options:
+  -v, --version    Show version number
+  -h, --help       Show help
+
+Environment Variables:
+  OBSIDIAN_API_URL    Base URL for Obsidian REST API (default: http://localhost:8000)
+  OBSIDIAN_API_KEY    Optional bearer token for authentication
+
+This is an MCP server that communicates via stdio. It should be configured
+in your MCP client (like Claude Desktop) rather than run directly.
+
+Example Claude Desktop configuration:
+{
+  "mcpServers": {
+    "obsidian-vault": {
+      "command": "npx",
+      "args": ["obsidian-local-rest-api-mcp"],
+      "env": {
+        "OBSIDIAN_API_URL": "http://localhost:8000"
+      }
+    }
+  }
+}
+`);
+  process.exit(0);
+}
+
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";

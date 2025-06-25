@@ -116,7 +116,7 @@ describe("Package Configuration", () => {
     const packageJson = require("../package.json");
 
     expect(packageJson.bin).toBeDefined();
-    expect(packageJson.bin["obsidian-mcp"]).toBe("build/index.js");
+    expect(packageJson.bin["obsidian-local-rest-api-mcp"]).toBe("build/index.js");
   });
 
   test("Dependencies are properly specified", () => {
