@@ -30,11 +30,13 @@ The project is automatically published to npm when a GitHub release is created. 
 ## CI/CD
 
 GitHub Actions workflow runs on:
+
 - Push to main/master branches
 - Pull requests
 - GitHub releases
 
 The workflow:
+
 - Tests on multiple Bun versions
 - Runs linting and tests
 - Builds the project
@@ -43,6 +45,7 @@ The workflow:
 ## Architecture
 
 The MCP server implements the Model Context Protocol specification and provides tools for:
+
 - File operations (list, get, create, update, delete)
 - Note operations with frontmatter support
 - Metadata extraction and search
