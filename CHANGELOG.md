@@ -26,7 +26,7 @@ This release represents a complete philosophical shift from CRUD-based API mappi
 #### 📊 Performance Improvements
 
 - **Context Efficiency**: Pagination prevents LLM context overflow
-- **Decision Reduction**: Upsert operations eliminate existence checks  
+- **Decision Reduction**: Upsert operations eliminate existence checks
 - **Cognitive Alignment**: Tools match natural language concepts
 
 #### 🔄 Backward Compatibility
