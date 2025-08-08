@@ -10,10 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Set up Node (Bun)
         uses: oven-sh/setup-bun@v1
@@ -31,13 +32,10 @@ jobs:
             https://api.github.com/repos/${repo}/contents/${path} > openapi.json
           jq . openapi.json > /dev/null
 
-      - name: Update spec and commit
+      - name: Update working tree with new spec
         run: |
           mkdir -p src
           mv openapi.json src/openapi.json
-          git checkout -b chore/update-api-spec-${{ github.run_id }}
-          git add src/openapi.json
-          git commit -m "chore: sync api spec from ${{ github.event.client_payload.spec_repo }}@$${{ github.event.client_payload.spec_sha }}"
 
       - name: Install deps
         run: bun install --frozen-lockfile || bun install
@@ -48,8 +46,17 @@ jobs:
       - name: Test
         run: bun test
 
-      - name: Create PR
+      - name: Commit and push to main
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
-          gh pr create --title "chore: sync API spec" --body "Automated update from ${{ github.event.client_payload.spec_repo }}" --head chore/update-api-spec-${{ github.run_id }} --base main || echo "PR may already exist"
+          if git diff --quiet --exit-code src/openapi.json; then
+            echo "No changes to spec; skipping commit."
+            exit 0
+          fi
+          git add src/openapi.json
+          git commit -m "chore: sync API spec from ${{ github.event.client_payload.spec_repo }}@${{ github.event.client_payload.spec_sha }}"
+          git push origin HEAD:main
