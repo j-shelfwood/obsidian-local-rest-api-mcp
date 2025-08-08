@@ -1,0 +1,55 @@
+name: Sync API Spec
+
+on:
+  repository_dispatch:
+    types: [api_spec_updated]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node (Bun)
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.2.17'
+
+      - name: Fetch OpenAPI spec from source repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          repo=${{ github.event.client_payload.spec_repo }}
+          path=${{ github.event.client_payload.spec_path }}
+          curl -sSL -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.raw+json" \
+            https://api.github.com/repos/${repo}/contents/${path} > openapi.json
+          jq . openapi.json > /dev/null
+
+      - name: Update spec and commit
+        run: |
+          mkdir -p src
+          mv openapi.json src/openapi.json
+          git checkout -b chore/update-api-spec-${{ github.run_id }}
+          git add src/openapi.json
+          git commit -m "chore: sync api spec from ${{ github.event.client_payload.spec_repo }}@$${{ github.event.client_payload.spec_sha }}"
+
+      - name: Install deps
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Test
+        run: bun test
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create --title "chore: sync API spec" --body "Automated update from ${{ github.event.client_payload.spec_repo }}" --head chore/update-api-spec-${{ github.run_id }} --base main || echo "PR may already exist"
