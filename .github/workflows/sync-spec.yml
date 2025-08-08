@@ -4,7 +4,7 @@ on:
   repository_dispatch:
     types: [api_spec_updated]
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:

@@ -9,8 +9,8 @@
 
 // Skip in CI environments or when explicitly requested
 if (process.env.CI === 'true' || process.env.SKIP_INTEGRATION_TESTS === 'true') {
-  console.log('⏭️  Skipping AI-Native MCP integration tests in CI environment.');
-  process.exit(0);
+    console.log('⏭️  Skipping AI-Native MCP integration tests in CI environment.');
+    process.exit(0);
 }
 
 import { readFileSync } from 'fs';
