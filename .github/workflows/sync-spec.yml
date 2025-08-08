@@ -3,6 +3,8 @@ name: Sync API Spec
 on:
   repository_dispatch:
     types: [api_spec_updated]
+  schedule:
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -25,9 +27,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          repo=${{ github.event.client_payload.spec_repo }}
-          path=${{ github.event.client_payload.spec_path }}
-          curl -sSL -H "Authorization: token ${GH_TOKEN}" \
+          repo=${{ github.event.client_payload.spec_repo || 'j-shelfwood/obsidian-local-rest-api' }}
+          path=${{ github.event.client_payload.spec_path || 'openapi.json' }}
+          curl -sSL \
             -H "Accept: application/vnd.github.raw+json" \
             https://api.github.com/repos/${repo}/contents/${path} > openapi.json
           jq . openapi.json > /dev/null
@@ -58,5 +60,5 @@ jobs:
             exit 0
           fi
           git add src/openapi.json
-          git commit -m "chore: sync API spec from ${{ github.event.client_payload.spec_repo }}@${{ github.event.client_payload.spec_sha }}"
+          git commit -m "chore: sync API spec (scheduled or dispatch)"
           git push origin HEAD:main
