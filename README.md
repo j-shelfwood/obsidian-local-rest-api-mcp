@@ -111,6 +111,10 @@ This MCP server has been redesigned following AI-Native principles rather than s
 
 The server maintains backward compatibility with existing tools like `get_note`, `list_notes`, `get_metadata_keys`, etc.
 
+<a href="https://glama.ai/mcp/servers/@j-shelfwood/obsidian-local-rest-api-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@j-shelfwood/obsidian-local-rest-api-mcp/badge" alt="Obsidian Local REST API Server MCP server" />
+</a>
+
 ## Prerequisites
 
 - Node.js 18+ or Bun runtime
