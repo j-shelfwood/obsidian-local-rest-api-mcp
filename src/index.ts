@@ -57,6 +57,7 @@ import { z } from "zod";
 const ConfigSchema = z.object({
   baseUrl: z.string().url().default("http://obsidian-local-rest-api.test"),
   apiKey: z.string().optional(),
+  timeout: z.number().int().positive().default(5000), // Request timeout in milliseconds
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -65,8 +66,10 @@ type Config = z.infer<typeof ConfigSchema>;
 class ObsidianApiClient {
   private baseUrl: string;
   private headers: Record<string, string>;
+  private config: Config;
 
   constructor(config: Config) {
+    this.config = config;
     this.baseUrl = `${config.baseUrl}/api`;
     this.headers = {
       "Content-Type": "application/json",
@@ -80,19 +83,28 @@ class ObsidianApiClient {
 
   private async request(path: string, options: RequestInit = {}): Promise<any> {
     const url = `${this.baseUrl}${path}`;
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...this.headers,
-        ...options.headers,
-      },
-    });
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...this.headers,
+          ...options.headers,
+        },
+        signal: AbortSignal.timeout(this.config.timeout)
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+        throw new Error(`Obsidian API request timed out after ${this.config.timeout}ms. Is Obsidian open?`);
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Enhanced API client methods for AI-native operations
@@ -572,6 +584,7 @@ async function main() {
   const config = ConfigSchema.parse({
     baseUrl: process.env.OBSIDIAN_API_URL || "http://obsidian-local-rest-api.test",
     apiKey: process.env.OBSIDIAN_API_KEY,
+    timeout: process.env.OBSIDIAN_API_TIMEOUT ? parseInt(process.env.OBSIDIAN_API_TIMEOUT, 10) : undefined,
   });
 
   const mcpServer = new ObsidianMcpServer(config);
