@@ -3,8 +3,6 @@ name: Sync API Spec
 on:
   repository_dispatch:
     types: [api_spec_updated]
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
